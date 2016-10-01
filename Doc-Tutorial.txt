@@ -1,0 +1,784 @@
+============
+THE LISTENER
+============
+When Puck starts it's at the Listener.  The Listener is a command prompt where
+you type Puck expressions for evaluation.  The Listener is executing a
+read-eval-print loop.
+
+The Listener understands a small number of commands which are always introduced by
+the ']' character.  For a list of these commands type ']help'.
+
+Listener commands are not part of the Puck language.
+
+=============
+THE SEMANTICS
+=============
+;; Puck Expression Syntax
+Every puck expression has the following form:
+
+   receiver [ message ]
+
+receiver is any Puck object.  The optional message has one of the following forms:
+
+   key
+   key arg
+   key1 arg1 key2 arg2 key3 arg3 ... key-n arg-n
+
+The concatenation of the keys of an expression is called the selector.
+
+;; Simple Expressions
+Since everything in Puck is an object, Puck expressions typed into the listener
+are themselves objects.  The listener evaluates each expression object by
+explicitly sending the message 'eval' to the expression.  The 'eval' message can
+be sent to any object.  It simply tells the object to evaluate itself and return
+the result.
+
+Simple literal expressions always evaluate to themselves.  Here are some examples:
+
+>>> null
+...
+null
+
+>>> true
+...
+true
+
+>>> false
+...
+false
+
+>>> 5
+...
+5
+
+>>> 3.14159
+...
+3.14159
+
+>>> "Hello, World!"
+...
+"Hello, World!"
+
+;; Simple Messages
+Now let's consider an example of an expression that includes a message.
+
+>>> "Hello, World!" length
+...
+13
+
+Here the message 'length' is passed to a string object.  The result of
+evaluating the expression is a number object which represents the number
+of characters in the string.
+
+Here's another Puck expression with a message:
+>>> 5 + 1
+...
+6
+
+Though the Puck expression may look like a simple mathematical expression, it's
+actually a standard Puck message '+ 1' passed to the receiver object, 5.  The
+message itself '+ 1' is composed of the key '+', and the argument 1.
+
+Here's another:
+>>> "Hello, World!" at: 4
+...
+"o"
+
+Returning the character at index 4.
+
+Messages can be composed of any number of key value pairs.  A selector is the
+concatenation of all the keys of a message. In this Puck expression the 
+selector is 'at:'.   When this message is sent to a string with an integer
+argument, the string method returns the nth character of the string.  Passing
+'at: 0' returns the first character.  Negative arguments can also be used;
+-1 is the last character, -2 is the next to the last, etc.
+
+A Puck string is not an array of characters such as in C.  Hence, Puck doesn't
+need a separate character type which it can collect together into an array.
+A Puck string of length 1 is still just a string.
+
+Here is a slightly more interesting Puck expression.
+>>> "Hello, World!" from: 7 to: 12
+...
+"World"
+
+This is an example of a multi-key message.  The selector, here 'from:to:',
+evaluates up to but not including the position indicated by the to: argument.
+
+;; Conventions for Selectors
+By convention a key which represent traditional operator, or which is composed
+of non-alphanumerics is left as is.  A key which is composed of alphanumerics
+starts with a lower-case.  If it takes an argument it's terminated by a colon
+':'. Predicate keys which take no arguments end in '?'.
+
+;; Symbols
+A symbolic language is one which has a first-class data object type called a
+symbol.  Symbols are similar to identifiers (function & variable names) in
+Algol-like languages.  However, in a symbolic language symbols are promoted to
+first-class objects, meaning they can be treated like any other kind of value
+(number, string, etc.).
+
+Puck symbols can be composed of nearly any character on the keyboard.
+
+Since a symbol is just another data type like an integer or string; every symbol
+evaluates to itself (just as integers and booleans and strings do).
+
+>>> 5
+...
+5
+
+>>> "Hello"
+...
+"Hello"
+
+>>> aSymbol
+...
+aSymbol
+
+;; Symbols as Variables?
+A Symbol has one particularly useful ability, it can be made to evaluate
+to something other than itself.
+
+>>> xyz
+...
+xyz
+
+>>> xyz <- "Hello, World!"   ;; Tell the symbol to evalute to a string
+...
+"Hello, World!"
+
+>>> xyz
+...
+"Hello, World!"
+
+>>> xyz length
+...
+13
+
+>>> xyz <- #xyz              ;; Tell the symbol to evaluate to itself
+...                          ;;    Could we use xyz <- #xyz instead?
+xyz
+
+>>> xyz
+...
+xyz
+
+Right now it's enough to know that # must be used when sending 'undefine' to
+a symbol.  Later on we'll discuss what # is.
+
+;; Evaluation order
+Puck expressions are not parsed in a way that allows for operator precedence.
+This is because no particular selector is a part of the language; they are part
+of the library.  Since the parser doesn't know anything about particular
+selectors (such as mathematical operators), it can't consider precedence when
+parsing.
+
+However, evaluation order can be forced using Puck Lists.  Lists will be more
+fully introduced in a bit. For now, know that a list is delimited using
+brackets ('[' and ']').  Lists can be nested, and inner-most lists will be
+evaluated before enclosing lists.  Hence, in this usage they work exactly like
+parenthesis in other languages.
+
+>>> 5 + [ 6 * [ [ 2 / 2 ] + 1 ] ]
+...
+17
+
+;; Lists
+Puck has only a small number of built-in data types:  Null, Boolean, Symbol,
+Magnitude, String, Number, List, Quote, Expression and Primitive.  Null has only
+one possible instance, 'null', which is defined globally.  Similary, Boolean has
+two instances, 'true' and 'false' which are also global symbols.  By far the
+most interesting built-in object is List.  A list may contain multiple
+expressions separated by semi-colons (';').  When a list is evaluated, each
+expression is evaluated in order.  The evaluation of the last expression in a
+list is what's returned from evaluating the list.
+
+>>> [ 1 + 1; 2 * 2; 3 / 3 ]
+...
+1
+
+Now lets say we want to write code that takes an integer and returns the english
+name of the integer. We might try to use the at: selector as we used with the
+string.
+
+>>> [ "zero"; "one"; "two"; "three"; "four"; "five" ] at: 3
+...
+"e"
+
+But this doesn't work.  What happened?  Recall that we can use lists like
+parenthesis, lists get evaluated first.  The evaluation of the list returned
+the result of the last thing evaluated.  So the list evaluated to the string
+"five".  The message, 'at: 3' is then passed not to the list but to the string,
+"five".  Hence, the final evaluation resulted in "e".
+
+To get Puck to send the 'at: 3' to the *list* we need another mechanism;
+something in the language which prevents the list from being evaluated.  The
+solution is what's called a Quote.
+
+A Quote is an Object in Puck which acts as a container that holds exactly one
+object. When a Quote is evaluated it returns the object it contains (this is
+very much like the object of the same name in Lisp).  In Puck a Quote object is
+indicated by a pound sign ('#') preceding the object it contains.  To borrow an
+oversimplied expression from the Lisp world, Quotes stop evaluation.  So let's
+quote the list in the example above and see what happens:
+
+>>> #[ "zero"; "one"; "two"; "three"; "four"; "five" ] at: 3
+...
+three
+
+Lists share many similarities to Strings.  They are also much like arrays in other
+languages with the additional feature that they grow and shrink as needed.
+
+Now recall back to when we wanted to undefine a symbol to cause it to again
+evaluate to itself, we used the Puck expression, '#xyz <- #xyz'.  Had we not used
+the #, the xyz would have been evaluated and '<- #xzy' would have been sent to
+the result.  Using # insured that the message would be sent to the symbol 'xyz'.
+
+;; Decisions
+Control flow structures work quite differently from those in Algol languages.
+Algol languages support such structures as integral parts of the respective
+language.  In Puck control flow structures are just ordinary messages.
+
+Many expressions can evaluate to a boolean value (true or false).
+
+>>> 5 = 5
+...
+true
+
+One of the selectors that Boolean objects can respond to is ifTrue:ifFalse:
+
+>>> [5 = 5] ifTrue: "They are equal" ifFalse: "They are not equal"
+...
+"They are equal"
+
+The method that implements the selector ifTrue:ifFalse: simply returns the evaluation of the first
+argument if the receiver is true, otherwise it returns the evaluation of the second argument.  This
+particular example is quite similar to the ?: operator in C, C++ and Java.
+
+In a real program ifTrue:ifFalse: will usually be spread across multiple lines for readability
+as follows:
+
+>>> [5 = 5]
+...     ifTrue:
+...          "They are equal"
+...     ifFalse:
+...          "They are not equal"
+
+;; Blocks or Lists?
+Since lists evaluate each member object in order they behave much like blocks in
+an Algol-like language.
+
+>>> x <- -3
+...
+-3
+
+>>> [ x < 0 ]
+...   ifTrue:
+...      #[
+...      x <- 0
+...      ]
+...   ifFalse:
+...      #[
+...      x <- 100
+...      ]
+...
+0
+
+>>> x
+...
+0
+
+Here the list arguments are quoted.  If they were unquoted, they would be evaluated and their results
+would be passed into ifTrue:ifFalse:.  Quoting the lists insures that the lists themselves are
+passed in as arugments.  So the first thing that gets evaluated is [ x < 0 ].  The resulting boolean
+object (which happens to be the object true) is then passed the selector ifTrue:ifFalse: along with
+two list arguments.  ifTrue:ifFalse: then decides which argument to evaluate (based upon
+weather the reciever is true or false, and returns the result of the evaluation.
+
+So after the first evaluation we have:
+
+>>> true                                <---- result of evaluating [ x < 0 ]
+...   ifTrue:
+...      #[
+...      x <- 0
+...      ]
+...   ifFalse:
+...      #[
+...      x <- 100
+...      ]
+
+The Quoted lists get evaluated to unquoted lists, and passed in as arguments to the selector ifTrue:ifFalse:
+Since the receiver is true, the selector decides to evaluate the *first* argument, the now unquoted list,
+[ x <- 0 ].  The result of this evaluation is 0 with the side-effect that x now has the value of 0.
+
+This would be quite similar to passing blocks of code around as arguments in java.  In the case of puck
+since lists are objects it's actually possible rather than theoretical.  Moreover it eliminates any need
+for any machinery in the language for implementing control structures.  Control structures are
+simply ordinary methods in Puck.  This simplifies the language tremendously.
+
+To further stress the point that these quoted lists are acting like blocks, consider the following:
+
+>>> [ x < 0 ]
+...   ifTrue:
+...      #[
+...      "Setting x to 0." printValue;
+...      x <- 0
+...      ]
+...   ifFalse:
+...      #[
+...      "Setting x to 100." printValue;
+...      x <- 100
+...      ]
+
+;; eval
+But we're not done with lists.  Every object in Puck responds to the selector 'eval' which causes the
+receiver to evaluate itself.
+
+>>> 5 eval
+...
+5
+
+The Listener parses every Puck expression which results in a Puck object (Usually an Expression object).
+The Listener then sends the message 'eval' to the newly parsed object to cause the object to evaluate
+itself.  We can demonstrate this to ourselves and thereby understand how ifTrue:ifFalse: is implemented.
+
+We know a list evaluates each member expression in turn, and returns the result of the last expression:
+
+>>> [ 1 + 1; 2 * 2; 3 / 3 ]
+...
+1
+
+A quoted list is a Quote object which contains a list.  When we type this at the Listenter, the
+listener sends 'eval' to the Quote object.  Quote's implementation of eval simply returns the
+object it contains.
+
+>>> #[ 1 + 1; 2 * 2; 3 / 3 ]
+...
+[ 1 + 1; 2 * 2; 3 / 3 ]
+
+Now when we add the message 'eval' to the above:
+
+>>> #[ 1 + 1; 2 * 2; 3 / 3 ] eval
+...
+1
+
+Remember there's another 'eval' passed by the listenter.  So what actually gets evaluted is:
+
+[# [ 1 + 1; 2 * 2; 3 / 3 ] eval ] eval
+
+The quoted list receives the message 'eval' which returns the list itself.  The list itself then
+receives the message 'eval' which results in 1.
+
+So, ifTrue:ifFalse: simply says if the receiver is true, it sends 'eval' to the first argument,
+otherwise it sends 'eval' to the second argument.
+
+;; Primitives
+A Primitive is simply any function that's built-in.  Primitives, like everything else in Puck,
+are Objects so they can receive messages.  We can use any primitive directly by sending it a variation
+of eval called evalForArgs: The arguments are passed as elements in a quoted list.
+
+>>> booleanNegation evalForArgs: #[ false ]
+...
+true
+
+>>> numberAdd evalForArgs: #[ 3; 4 ]
+...
+7
+
+Sending evalForArgs: to a primitive is much like a normal function call in Java:
+
+   booleanNegation( false );
+   numberAdd( 3, 4 );
+
+This notation is wordy and ugly.  Clearly it's a requirement of the grammar but it rarely needs
+to be used.  We'll use it in a few more cases simply to provide some demonstrations.
+
+;; Lists as lambda functions
+Lists are far more capable than we've seen so far.  Since lists are objects we have seen that we
+can pass them into methods allowing us to use them like blocks of code.  Lists can also be assigned
+to symbols for execution later.
+
+>>> incrementX <-
+...   #[
+...   x <- [ x + 1 ]
+...   ]
+...
+[ x <- [ x + 1 ] ]
+
+... x <- 5
+...
+5
+
+>>> x
+...
+5
+
+>>> incrementX eval
+...
+6
+
+>>> x
+...
+6
+
+This behavior makes lists feel more and more like functions.  Lists can even take arguments:
+
+>>> increment <-
+...    #[ | aNumber |
+...    aNumber <- [ aNumber + 1 ]
+...    ]
+...
+[ | aNumber | aNumber <- [ aNumber + 1 ] ]
+
+And they respond just as if they were primitives.
+
+>>> increment evalForArgs: #[ 3 ]
+...
+4
+
+>>> plus <-
+...    #[ | addend1 addend2 |
+...    addend1 + addend2
+...    ]
+...
+[ | addend1 addend2 | addend1 + addend2 ]
+
+>>> plus evalForArgs: #[ 3; 4 ]
+...
+7
+
+;; Counted Loops
+In an Algol type language we would use a for or while loop.  In Puck there are several ways to loop
+depending upon which receiver we have available, and exactly what we want to do.  Let's say we want to
+create a list that counts from 0 to 9.
+
+First we create an empty list:
+
+>>> lst <- #[ ]
+...
+[ ]
+
+Now we add the numbers:
+
+>>> 10 doTimes:
+...    #[ | n |
+...    lst append: n
+...    ]
+[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ]
+
+>>> lst
+...
+[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ]
+
+doTimes: is looping with a counter.  On each iteration it's sending evalForArgs: to the
+list argument.
+
+eval and its variations, such as evalForArgs: are vital to Puck and understanding how to simulate
+control flow structures in Algol-like languages.  They are essential tools for implementing your own
+such structures.
+
+;; Objects or Classes?
+Puck doesn't differentiate between objects and classes.  Everything is an object.  Something is
+a class simply because we choose to treat it as such.  Every Puck Object has a member called 'class'.
+This member is a reference to the object used to create it.  If we create a new object from some
+other object then the originating object behaves as the class of the new object.  For example,
+there's an Object called Number.  When we create a number object, that object's 'class' member
+is a reference back to the Number object.
+
+>>> 5 member: #class
+...
+<object id=46065968 name='Number'>
+
+The actual ID will probably differ, but the point is that name='Number'.  Number's class is in turn
+Magnitude.
+
+>>> Number member: #class
+...
+<object id=46065904 name='Magnitude'>
+
+Whose class is Object.
+
+>>> Magnitude member: #class
+...
+<object id=46065584 name='Object'>
+
+Object is the top of the object hierarchy.  Its class is itself.
+
+>>> Object member: #class
+...
+<object id=46065584 name='Object'>
+
+Objects are flexible and expandible.  Building a "class" is simply the process of constructing an
+object (using some existing object as a template or starting point), the cusomizing the new Object.
+
+Here we define a new function doubleIt, then  add it to the Number class.
+
+>>> numberDouble <-
+...    #[ | aNumber |
+...    aNumber <- [ aNumber * 2 ]
+...    ]
+...
+[ | aNumber | aNumber <- [ aNumber * 2 ] ]
+
+Test it
+
+>>> numberDouble evalForArgs: #[ 5 ]
+...
+10
+
+Add it to Number  (while member: retrieves members from Objects, member:setTo: sets members,
+adding them if they don't already exist).
+
+>>> Number member: doubleIt setTo: numberDouble
+[ | aNumber | aNumber <- [ aNumber * 2 ] ]
+
+Test the new method
+
+>>> 5 doubleIt
+...
+10
+
+;; HOW TO: Restrict Use of 'make'
+
+Restricting use of 'make' is simply a matter of redefining #make for any given object.
+
+Since class Null is a singleton (there's only one instance), redefine #make to
+always return the instance.
+
+>>> Null member: #make setTo: #[ | aClass | null ]
+
+Since object null doesn't redefine make it will inherit class Null's new implementation.
+
+Similarly for Boolean, true and false.  Attempts to use #make on Boolean will
+always return the true object.
+
+>>> Boolean member: #make setTo: #[ | aClass | true ]
+
+Since we don't want false inheriting Boolean's implementation of returning true
+we have to override make only in the case of false.
+
+>>> false member: #make setTo: #[ | aClass | false ]
+
+Finally, we want each primitive to be a singleton.  So, after all the
+primitive objects are created we evaluate the following:
+
+>>> Primitive member: #make setTo: #[ | aClass | null ]
+
+We could also do this more properly by redefining #make on each Primivite instance
+to return the instance itself.  Or we could generalize:
+
+>>> Primitive member: #make setTo:
+       #[ | self |
+       [ self#class sameObjectAs: Primitive ]
+          ifTrue:
+             #[
+             ;;; expression is:  'Primitive make'
+             null
+             ]
+          ifFalse:
+             #[
+             ;;; expression is:  '<someInstanceOfPrimitive> make'
+             self
+             ]
+       ]
+
+This way if make is called on a primitive, the singleton primitive is returned.
+If it's called on Primitive, null is returned.  Alternatively we could return
+a NoOp method or some other trivial callable.
+
+;; Shorthand-#
+
+// Access Members
+obj member: #<mem>
+obj member: #<mem> setTo: 5
+   // Special Members
+   #class
+   #self
+
+// Call Method
+obj memName                        // is equiv to
+[obj member: #memName] eval        // which is equiv to
+obj evalMessage: #[ memName ]
+
+obj memName arg                    // is equiv to
+[obj member: #memName] evalForArgs #[ arg ]
+obj evalMessage: #[ memName; arg ]
+
+// List, code block, or annonymous function?
+[| a b | a + b] evalForArgs: #[1; 2]
+obj evalMessage: #[f; 1; 2]
+[ #[obj; f; 1; 2] asExpr ] eval
+
+// Call Primitives
+primitiveName evalForArgs: #[ instOfClassObj otherArgs ]
+
+// Call method using selector
+[ClassObj member: #selector] evalForArgs: #[ instOfClassObj otherArgs ]
+
+
+X <- [Object make]                                // Make a new object whose #class member is Object
+
+
+# TODO:  How do you call a superclass's version of a function, or more generally
+#        How to you access any member in a superclass.
+# Solution:
+#        self#class#class superClassSelector: arg
+#        self#class#class#superClassMember
+
+// Ideas for how to make & use classes
+
+Object member: #init add:
+   #[ | theNewObj |
+   theNewObj member: #class set: Object
+   ]
+
+
+Date <- [Object make]
+
+Date member: #year  setTo: 0;
+Date member: #month setTo: 1;
+Date member: #day   setTo: 1;
+
+Date member: #addDays: setTo:
+   #[ | aNumDays |
+   self member: #day setTo: [[self member: #day] + aNumDays]
+   ];;
+
+Date member: #addMonths: setTo:
+   #[ | aNumMonths |
+   self member: #month setTo: [[self member: #month] + aNumMonths]
+   ];;
+
+Date member: #addYears: setTo:
+   #[ | aNumYears |
+   self member: #year setTo: [[self member: #year] + aNumYears]
+   ]
+
+Date member: #asString setTo:
+   #[
+   [[self member: #year] asString] + '/' + [[self member: #month] asString] + '/' + [[self member: #day] asString]
+   ]
+
+Techniques
+==========
+;; HOW TO: Restrict Use of 'make'
+
+Restricting use of 'make' is simply a matter of redefining #make for any given object.
+
+Since class Null is a singleton (there's only one instance), redefine #make to
+always return the instance.
+
+>>> Null member: #make setTo: #[ | aClass | null ]
+
+Since object null doesn't redefine make it will inherit class Null's new implementation.
+
+Similarly for Boolean, true and false.  Attempts to use #make on Boolean will
+always return the true object.
+
+>>> Boolean member: #make setTo: #[ | aClass | true ]
+
+Since we don't want false inheriting Boolean's implementation of returning true
+we have to override make only in the case of false.
+
+>>> false member: #make setTo: #[ | aClass | false ]
+
+Finally, we want each primitive to be a singleton.  So, after all the
+primitive objects are created we evaluate the following:
+
+>>> Primitive member: #make setTo: #[ | aClass | null ]
+
+We could also do this more properly by redefining #make on each Primivite instance
+to return the instance itself.  Or we could generalize:
+
+>>> Primitive member: #make setTo:
+       #[ | self |
+       [ self#class sameObjectAs: Primitive ]
+          ifTrue:
+             #[
+             ;;; expression is:  'Primitive make'
+             null
+             ]
+          ifFalse:
+             #[
+             ;;; expression is:  '<someInstanceOfPrimitive> make'
+             self
+             ]
+       ]
+
+This way if make is called on a primitive, the singleton primitive is returned.
+If it's called on Primitive, null is returned.  Alternatively we could return
+a NoOp method or some other trivial callable.
+
+;; Shorthand-#
+
+// Access Members
+obj member: #<mem>
+obj member: #<mem> setTo: 5
+   // Special Members
+   #class
+   #self
+
+// Call Method
+obj memName                        // is equiv to
+[obj member: #memName] eval        // which is equiv to
+obj evalMessage: #[ memName ]
+
+obj memName arg                    // is equiv to
+[obj member: #memName] evalForArgs #[ arg ]
+obj evalMessage: #[ memName; arg ]
+
+// List, code block, or annonymous function?
+[| a b | a + b] evalForArgs: #[1; 2]
+obj evalMessage: #[f; 1; 2]
+[ #[obj; f; 1; 2] asExpr ] eval
+
+// Call Primitives
+primitiveName evalForArgs: #[ instOfClassObj otherArgs ]
+
+// Call method using selector
+[ClassObj member: #selector] evalForArgs: #[ instOfClassObj otherArgs ]
+
+
+X <- [Object make]                                // Make a new object whose #class member is Object
+
+
+# TODO:  How do you call a superclass's version of a function, or more generally
+#        How to you access any member in a superclass.
+# Solution:
+#        self#class#class superClassSelector: arg
+#        self#class#class#superClassMember
+
+// Ideas for how to make & use classes
+
+Object member: #init add:
+   #[ | theNewObj |
+   theNewObj member: #class set: Object
+   ]
+
+
+Date <- [Object make]
+
+Date member: #year  setTo: 0;
+Date member: #month setTo: 1;
+Date member: #day   setTo: 1;
+
+Date member: #addDays: setTo:
+   #[ | aNumDays |
+   self member: #day setTo: [[self member: #day] + aNumDays]
+   ];;
+
+Date member: #addMonths: setTo:
+   #[ | aNumMonths |
+   self member: #month setTo: [[self member: #month] + aNumMonths]
+   ];;
+
+Date member: #addYears: setTo:
+   #[ | aNumYears |
+   self member: #year setTo: [[self member: #year] + aNumYears]
+   ]
+
+Date member: #asString setTo:
+   #[
+   [[self member: #year] asString] + '/' + [[self member: #month] asString] + '/' + [[self member: #day] asString]
+   ]
+

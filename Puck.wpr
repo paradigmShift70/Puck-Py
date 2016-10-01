@@ -1,0 +1,21 @@
+#!wing
+#!version=5.0
+##################################################################
+# Wing IDE project file                                          #
+##################################################################
+[project attributes]
+proj.file-list = [loc('Doc-Reference.txt'),
+                  loc('Doc-Tutorial.txt'),
+                  loc('Object.py'),
+                  loc('PuckListener.py'),
+                  loc('PuckParser.py'),
+                  loc('PuckScanner.py'),
+                  loc('Scanner.py'),
+                  loc('_test_exprEval.txt'),
+                  loc('_test_parser.txt'),
+                  loc('_test_scanner.txt')]
+proj.file-type = 'shared'
+proj.main-file = loc('PuckListener.py')
+testing.auto-test-file-specs = [('glob',
+                                 '_test_*.txt')]
+testing.test-framework = {None: ':internal doctest'}

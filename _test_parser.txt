@@ -1,0 +1,118 @@
+Python 3.2.2 (default, Sep  4 2011, 09:07:29) [MSC v.1500 64 bit (AMD64)]
+Type "help", "copyright", "credits" or "license" for more information.
+
+>>> from PuckParser import parseAndPrintExpr as test
+
+>>> test( '[false member: #class] sameObjectAs: Object' )
+[ false member: #class ] sameObjectAs: Object
+
+>>> test( '5 + 4' )
+5 + 4
+
+>>> test( '6.83 - 3' )
+6.83 - 3
+
+>>> test( '2 * 8' )
+2 * 8
+
+>>> test( '10 / 2.659' )
+10 / 2.659
+
+>>> test( '"hello" length' )
+"hello" length
+
+>>> test( '5 = 5' )
+5 = 5
+
+>>> test( '5 = x' )
+5 = x
+
+>>> test( 'true = true' )
+true = true
+
+>>> test( 'false = true' )
+false = true
+
+>>> test( 'false = false' )
+false = false
+
+>>> test( 'true = false' )
+true = false
+
+>>> test( 'true sameObjectAs: true' )
+true sameObjectAs: true
+
+>>> test( 'null sameObjectAs: 3' )
+null sameObjectAs: 3
+
+>>> test( '[false member: #class] sameObjectAs: Object' )
+[ false member: #class ] sameObjectAs: Object
+
+>>> test( 'booleanNegation sameObjectAs: [true member: not]' )
+booleanNegation sameObjectAs: [ true member: not ]
+
+>>> test( '[true member: not] sameObjectAs: booleanNegation' )
+[ true member: not ] sameObjectAs: booleanNegation
+
+>>> test( 'booleanNegation sameObjectAs: [Boolean member: not]' )
+booleanNegation sameObjectAs: [ Boolean member: not ]
+
+>>> test( '[Boolean member: not] sameObjectAs: booleanNegation' )
+[ Boolean member: not ] sameObjectAs: booleanNegation
+
+>>> test( '[ 1; 3; 3 ]' )
+[ 1; 3; 3 ]
+
+>>> test( '[ 1; 3; 3 + 5 ]' )
+[ 1; 3; 3 + 5 ]
+
+>>> test( '[ 1; junk <- 0; 3 + 5 ]' )
+[ 1; junk <- 0; 3 + 5 ]
+
+>>> test( 'junk' )
+junk
+
+>>> test( 'lst <- #[ a; b; c ]' )
+lst <- #[ a; b; c ]
+
+>>> test( 'lst at: 1' )
+lst at: 1
+
+>>> test( 'junk <- 3' )
+junk <- 3
+
+>>> test( '[ 1; junk <- 0; 3 + 5 ]' )
+[ 1; junk <- 0; 3 + 5 ]
+
+>>> test( '[ local <- 100; local ]' )
+[ local <- 100; local ]
+
+>>> test( '[ local <- 100; local + 1 ]' )
+[ local <- 100; local + 1 ]
+
+>>> test( '#[ | :val | val + 1 ] evalForArgs: #[ 4 ]' )
+#[ | :val | val + 1 ] evalForArgs: #[ 4 ]
+
+>>> test( 'inc <- #[ | :val | val + -1 ]' )
+inc <- #[ | :val | val + -1 ]
+
+>>> test( 'inc evalWithArgs: #[ 6 ]' )
+inc evalWithArgs: #[ 6 ]
+
+>>> test( '#[ | :val1 :val2 | val1 + val2 ] evalForArgs: #[ 1; 2]' )
+#[ | :val1 :val2 | val1 + val2 ] evalForArgs: #[ 1; 2 ]
+
+>>> test( '3 doTimes: #[ | x | junk <- [ junk + 1 ] ]' )
+3 doTimes: #[ | x | junk <- [ junk + 1 ] ]
+
+>>> test( 'ct <- 0' )
+ct <- 0
+
+>>> test( '#[ct != 3] whileTrue: #[ ct <- [ ct + 1 ] ]' )
+#[ ct != 3 ] whileTrue: #[ ct <- [ ct + 1 ] ]
+
+>>> test( '[Boolean member: #not] evalForArgs: #[ false ]' )
+[ Boolean member: #not ] evalForArgs: #[ false ]
+
+>>> test( 'Object#listMembers' )
+[ Object member: #listMembers ]

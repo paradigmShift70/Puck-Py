@@ -1,0 +1,384 @@
+>>> import PuckScanner
+
+>>> scn = PuckScanner.PuckScanner( )
+
+>>> scn.tokenize( '[false member: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '      [false member: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '\n[false member: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '\t[false member: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '\t[false \nmember: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '\t[false \nmember: #class]    \r              sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( '5 + 4' )
+111  /5/
+101  /+/
+111  /4/
+
+>>> scn.tokenize( '6.83 - 3' )
+112  /6.83/
+101  /-/
+111  /3/
+
+>>> scn.tokenize( '2 * 8' )
+111  /2/
+101  /*/
+111  /8/
+
+>>> scn.tokenize( '10 / 2.659' )
+111  /10/
+101  ///
+112  /2.659/
+
+>>> scn.tokenize( '"hello" length' )
+102  /"hello"/
+101  /length/
+
+>>> scn.tokenize( '5 = 5' )
+111  /5/
+101  /=/
+111  /5/
+
+>>> scn.tokenize( '5 = x' )
+111  /5/
+101  /=/
+101  /x/
+
+>>> scn.tokenize( 'true = true' )
+101  /true/
+101  /=/
+101  /true/
+
+>>> scn.tokenize( 'false = true' )
+101  /false/
+101  /=/
+101  /true/
+
+>>> scn.tokenize( 'false = false' )
+101  /false/
+101  /=/
+101  /false/
+
+>>> scn.tokenize( 'true = false' )
+101  /true/
+101  /=/
+101  /false/
+
+>>> scn.tokenize( 'true sameObjectAs: true' )
+101  /true/
+101  /sameObjectAs:/
+101  /true/
+
+>>> scn.tokenize( 'null sameObjectAs: 3' )
+101  /null/
+101  /sameObjectAs:/
+111  /3/
+
+>>> scn.tokenize( '[false member: #class] sameObjectAs: Object' )
+201  /[/
+101  /false/
+101  /member:/
+501  /#/
+101  /class/
+202  /]/
+101  /sameObjectAs:/
+101  /Object/
+
+>>> scn.tokenize( 'booleanNegation sameObjectAs: [true member: not]' )
+101  /booleanNegation/
+101  /sameObjectAs:/
+201  /[/
+101  /true/
+101  /member:/
+101  /not/
+202  /]/
+
+>>> scn.tokenize( '[true member: not] sameObjectAs: booleanNegation' )
+201  /[/
+101  /true/
+101  /member:/
+101  /not/
+202  /]/
+101  /sameObjectAs:/
+101  /booleanNegation/
+
+>>> scn.tokenize( 'booleanNegation sameObjectAs: [Boolean member: not]' )
+101  /booleanNegation/
+101  /sameObjectAs:/
+201  /[/
+101  /Boolean/
+101  /member:/
+101  /not/
+202  /]/
+
+>>> scn.tokenize( '[Boolean member: not] sameObjectAs: booleanNegation' )
+201  /[/
+101  /Boolean/
+101  /member:/
+101  /not/
+202  /]/
+101  /sameObjectAs:/
+101  /booleanNegation/
+
+>>> scn.tokenize( '[ 1; 3; 3 ]' )
+201  /[/
+111  /1/
+500  /;/
+111  /3/
+500  /;/
+111  /3/
+202  /]/
+
+>>> scn.tokenize( '[ 1; 3; 3 + 5 ]' )
+201  /[/
+111  /1/
+500  /;/
+111  /3/
+500  /;/
+111  /3/
+101  /+/
+111  /5/
+202  /]/
+
+>>> scn.tokenize( '[ 1; junk <- 0; 3 + 5 ]' )
+201  /[/
+111  /1/
+500  /;/
+101  /junk/
+101  /<-/
+111  /0/
+500  /;/
+111  /3/
+101  /+/
+111  /5/
+202  /]/
+
+>>> scn.tokenize( 'junk' )
+101  /junk/
+
+>>> scn.tokenize( 'lst <- #[ a; b; c ]' )
+101  /lst/
+101  /<-/
+501  /#/
+201  /[/
+101  /a/
+500  /;/
+101  /b/
+500  /;/
+101  /c/
+202  /]/
+
+>>> scn.tokenize( 'lst at: 1' )
+101  /lst/
+101  /at:/
+111  /1/
+
+>>> scn.tokenize( 'lst! at: 1' )
+101  /lst!/
+101  /at:/
+111  /1/
+
+>>> scn.tokenize( 'junk <- 3' )
+101  /junk/
+101  /<-/
+111  /3/
+
+>>> scn.tokenize( '[ 1; junk <- 0; 3 + 5 ]' )
+201  /[/
+111  /1/
+500  /;/
+101  /junk/
+101  /<-/
+111  /0/
+500  /;/
+111  /3/
+101  /+/
+111  /5/
+202  /]/
+
+>>> scn.tokenize( '[ local <- 100; local ]' )
+201  /[/
+101  /local/
+101  /<-/
+111  /100/
+500  /;/
+101  /local/
+202  /]/
+
+>>> scn.tokenize( '[ local <- 100; local + 1 ]' )
+201  /[/
+101  /local/
+101  /<-/
+111  /100/
+500  /;/
+101  /local/
+101  /+/
+111  /1/
+202  /]/
+
+>>> scn.tokenize( '#[ | :val | val + 1 ] evalForArgs: #[ 4 ]' )
+501  /#/
+201  /[/
+502  /|/
+503  /:/
+101  /val/
+502  /|/
+101  /val/
+101  /+/
+111  /1/
+202  /]/
+101  /evalForArgs:/
+501  /#/
+201  /[/
+111  /4/
+202  /]/
+
+>>> scn.tokenize( 'inc <- #[ | :val | val + -1 ]' )
+101  /inc/
+101  /<-/
+501  /#/
+201  /[/
+502  /|/
+503  /:/
+101  /val/
+502  /|/
+101  /val/
+101  /+/
+111  /-1/
+202  /]/
+
+>>> scn.tokenize( 'inc evalForArgs: #[ 6 ]' )
+101  /inc/
+101  /evalForArgs:/
+501  /#/
+201  /[/
+111  /6/
+202  /]/
+
+>>> scn.tokenize( '#[ | :val1 :val2 | val1 + val2 ] evalForArgs: #[ 1; 2]' )
+501  /#/
+201  /[/
+502  /|/
+503  /:/
+101  /val1/
+503  /:/
+101  /val2/
+502  /|/
+101  /val1/
+101  /+/
+101  /val2/
+202  /]/
+101  /evalForArgs:/
+501  /#/
+201  /[/
+111  /1/
+500  /;/
+111  /2/
+202  /]/
+
+>>> scn.tokenize( '3 doTimes: #[ | x | junk <- [ junk + 1 ] ]' )
+111  /3/
+101  /doTimes:/
+501  /#/
+201  /[/
+502  /|/
+101  /x/
+502  /|/
+101  /junk/
+101  /<-/
+201  /[/
+101  /junk/
+101  /+/
+111  /1/
+202  /]/
+202  /]/
+
+>>> scn.tokenize( 'ct <- 0' )
+101  /ct/
+101  /<-/
+111  /0/
+
+>>> scn.tokenize( '#[ct != 3] whileTrue: #[ ct <- [ ct + 1 ] ]' )
+501  /#/
+201  /[/
+101  /ct/
+101  /!=/
+111  /3/
+202  /]/
+101  /whileTrue:/
+501  /#/
+201  /[/
+101  /ct/
+101  /<-/
+201  /[/
+101  /ct/
+101  /+/
+111  /1/
+202  /]/
+202  /]/
+
+>>> scn.tokenize( '[Boolean member: #not] evalForArgs: #[ false ]' )
+201  /[/
+101  /Boolean/
+101  /member:/
+501  /#/
+101  /not/
+202  /]/
+101  /evalForArgs:/
+501  /#/
+201  /[/
+101  /false/
+202  /]/
+

@@ -1,0 +1,378 @@
+Python 3.3.0 (v3.3.0:bd8afb90ebf2, Sep 29 2012, 10:57:17) [MSC v.1600 64 bit (AMD64)]
+Type "help", "copyright", "credits" or "license" for more information.
+
+>>> from PuckParser import parseEvalAndPrintExpr as test
+
+### Values
+>>> test( 'null' )
+null
+
+>>> test( 'true' )
+true
+
+>>> test( 'false' )
+false
+
+>>> test( '5' )
+5
+
+>>> test( '3.14159' )
+3.14159
+
+>>> test( 'aSymbol' )
+aSymbol
+
+>>> test( '"one"' )
+"one"
+
+>>> test( 'booleanNegation' )                      # doctest: +ELLIPSIS
+<object Primitive id=... name="booleanNegation">
+
+>>> test( 'Object' )                               # doctest: +ELLIPSIS
+<object id=... name="Object">
+
+>>> test( 'Object make' )                          # doctest: +ELLIPSIS
+<object id=...>
+
+>>> test( 'Number member: #class' )                # doctest: +ELLIPSIS
+<object id=... name="Magnitude">
+
+>>> test( 'Magnitude member: #class' )             # doctest: +ELLIPSIS
+<object id=... name="Object">
+
+>>> test( 'Object member: #class' )                # doctest: +ELLIPSIS
+<object id=... name="Object">
+
+### Simple Expressions using primitives
+>>> test( '5 + 4' )
+9
+
+>>> test( '6 - 3' )
+3
+
+>>> test( '6.83 - 3' )
+3.83
+
+>>> test( '2 * 8' )
+16
+
+>>> test( '10 / 2' )
+5.0
+
+>>> test( '10 / 2.659' )
+3.7608123354644607
+
+>>> test( '"hello" length' )
+5
+
+>>> test( '5 = 5' )
+true
+
+>>> test( '5 = x' )
+false
+
+>>> test( 'true = true' )
+true
+
+>>> test( 'false = true' )
+false
+
+>>> test( 'false = false' )
+true
+
+>>> test( 'true = false' )
+false
+
+>>> test( 'true sameObjectAs: true' )
+true
+
+>>> test( 'null sameObjectAs: 3' )
+false
+
+>>> test( '#[ ] append: 5' )
+[ 5 ]
+
+>>> test( '[false member: #class] sameObjectAs: Object' )
+false
+
+>>> test( '[false member: #class] sameObjectAs: Boolean' )
+true
+
+>>> test( 'false#class sameObjectAs: Boolean' )
+true
+
+>>> test( 'booleanNegation sameObjectAs: [true member: not]' )
+true
+
+>>> test( '[true member: not] sameObjectAs: booleanNegation' )
+true
+
+>>> test( 'booleanNegation sameObjectAs: [Boolean member: not]' )
+true
+
+>>> test( '[Boolean member: not] sameObjectAs: booleanNegation' )
+true
+
+>>> test( '[ 1; 3; 3 ]' )
+3
+
+>>> test( '[ 1; 3; 3 + 5 ]' )
+8
+
+>>> test( 'junk' )
+junk
+
+### Defining and Using variables
+>>> test( '[ 1; junk <- 0; 3 + 5 ]' )
+8
+
+>>> test( 'junk' )
+junk
+
+>>> test( 'lst <- #[ a; b; c ]' )
+[ a; b; c ]
+
+>>> test( 'lst at: 1' )
+b
+
+>>> test( 'junk <- 3' )
+3
+
+>>> test( 'junk' )
+3
+
+>>> test( '[ 1; junk <- 0; 3 + 5 ]' )
+8
+
+>>> test( 'junk' )
+0
+
+>>> test( '[ local <- 100; local ]' )
+100
+
+>>> test( 'local' )
+local
+
+>>> test( '[ local <- 100; local + 1 ]' )
+101
+
+### Defining callable blocks
+>>> test( '#[ | :val | val + 1 ] evalForArgs: #[ 4 ]' )
+5
+
+>>> test( 'inc <- #[ | :val | val + -1 ]' )
+[ | :val | val + -1 ]
+
+>>> test( 'inc evalForArgs: #[ 6 ]' )
+5
+
+>>> test( '#[ | :val1 :val2 | val1 + val2 ] evalForArgs: #[ 1; 2]' )
+3
+
+>>> test( 'junk' )
+0
+
+>>> test( '3 doTimes: #[ | :x | junk <- [ junk + 1 ] ]' )
+3
+
+>>> test( 'junk' )
+3
+
+>>> test( 'ct <- 0' )
+0
+
+>>> test( '#[ct != 3] whileTrue: #[ ct <- [ ct + 1 ] ]' )
+3
+
+>>> test( '[Boolean member: #not] evalForArgs: #[ false ]' )
+true
+
+>>> test( 'fn <- #[ | :num | num + 1 ]' )
+[ | :num | num + 1 ]
+
+>>> test( 'fn evalForArgs: #[ 10 ]' )
+11
+
+>>> test( 'Number member: #inc setTo: fn' )
+[ | :num | num + 1 ]
+
+>>> test( '3 inc' )
+4
+
+>>> test( 'List#from:to: sameObjectAs: [List member: #from:to:]' )
+true
+
+>>> test( 'sub <- #[ | :a :b | a - b ]' )
+[ | :a :b | a - b ]
+
+>>> test( 'sub evalForArgs: #[ 2; 1 ]' )
+1
+
+>>> test( 'sub evalForArgs: #[ 1; 2 ]' )
+-1
+
+>>> test( 'Number inc' )
+Traceback (most recent call last):
+  File "c:\python32\lib\doctest.py", line 1253, in __run
+    compileflags, 1), test.globs)
+  File "<doctest _test_exprEval.txt[57]>", line 1, in <module>
+    test( 'Number inc' )
+  File "C:\projects\Puck\PuckParser.py", line 290, in parseEvalAndPrintExpr
+    result = Object.EVAL_OBJ_R( expr )
+  File "C:\projects\Puck\Object.py", line 232, in EVAL_OBJ_R
+    EVAL_EXPR( anObj, 'eval', [ ], anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 247, in EVAL_EXPR
+    STACK_EVAL( aSel, numArgs+1, anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 254, in STACK_EVAL
+    theHandler._fn( anEnv, anArgCt, isLValue )
+  File "C:\projects\Puck\Object.py", line 859, in pkExpr_evaluate
+    STACK_EVAL( thePkExprInst._sel, numArgs, anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 254, in STACK_EVAL
+    theHandler._fn( anEnv, anArgCt, isLValue )
+  File "C:\projects\Puck\Object.py", line 317, in _fn
+    STACK_EVAL( 'evalWithArgs:', anArgCt+1, anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 254, in STACK_EVAL
+    theHandler._fn( anEnv, anArgCt, isLValue )
+  File "C:\projects\Puck\Object.py", line 762, in pkList_evaluateWithArgs_
+    mostRecent = EVAL_OBJ_R( thePkObj, thePkListInst._environment, False )
+  File "C:\projects\Puck\Object.py", line 232, in EVAL_OBJ_R
+    EVAL_EXPR( anObj, 'eval', [ ], anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 247, in EVAL_EXPR
+    STACK_EVAL( aSel, numArgs+1, anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 254, in STACK_EVAL
+    theHandler._fn( anEnv, anArgCt, isLValue )
+  File "C:\projects\Puck\Object.py", line 859, in pkExpr_evaluate
+    STACK_EVAL( thePkExprInst._sel, numArgs, anEnv, isLValue )
+  File "C:\projects\Puck\Object.py", line 254, in STACK_EVAL
+    theHandler._fn( anEnv, anArgCt, isLValue )
+  File "C:\projects\Puck\Object.py", line 642, in pkNumber_add_
+    arg0, arg1 = popAndTestArgs( anArgCt, 'Number', 'Number' )
+  File "C:\projects\Puck\Object.py", line 178, in popAndTestArgs
+    raise Exception( "Argument {0} expected to be a {1}.".format( argNum, argType ) )
+Object.PuckException: Argument 0 expected to be a Number.
+
+### Classes
+>>> test( 'Date <- [Object make]' )   # doctest: +ELLIPSIS
+<object id=...>
+
+>>> test( 'Date selfMember: #name setTo: "Date"' )
+"Date"
+
+>>> test( 'Date' )                    # doctest: +ELLIPSIS
+<object id=... name="Date">
+
+>>> test( '''Date member: #init setTo:
+...            #[ | :self |
+...            self member: #year  setTo: 2013;
+...            self member: #month setTo:    1;
+...            self member: #day   setTo:    1
+...            ]''' )
+[ | :self | self member: #year setTo: 2013; self member: #month setTo: 1; self member: #day setTo: 1 ]
+
+>>> test( 'aDate <- [ Date make ]' )   # doctest: +ELLIPSIS
+<object id=...>
+
+>>> test( 'aDate init' )
+1
+
+>>> test( 'aDate memberList' )
+[ class; day; month; self; year ]
+
+>>> test( '''Date member: #addYears: setTo:
+...            #[ | :self :numYears |
+...            self member: #year setTo: [self#year + numYears]
+...            ]''' )
+[ | :self :numYears | self member: #year setTo: [ [ self member: #year ] + numYears ] ]
+
+>>> test( 'aDate member: #year setTo: 2013' )
+2013
+
+>>> test( 'aDate addYears: 1' )
+2014
+
+>>> test( 'aDate#year' )
+2014
+
+### Recursion
+
+>>> test( '''fact <-
+...             #[ | :n |
+...             [ n = 0 ]
+...                ifTrue:  1
+...                ifFalse: #[ n * [ fact evalForArgs: [ #[ n - 1 ] evalInPlace ] ] ]
+...             ]''' )
+[ | :n | [ n = 0 ] ifTrue: 1 ifFalse: #[ n * [ fact evalForArgs: [ #[ n - 1 ] evalInPlace ] ] ] ]
+
+>>> test( '''fact evalForArgs: #[ 0 ]''' )
+1
+
+>>> test( '''fact evalForArgs: #[ 1 ]''' )
+1
+
+>>> test( '''fact evalForArgs: #[ 2 ]''' )
+2
+
+>>> test( '''fact evalForArgs: #[ 3 ]''' )
+6
+
+>>> test( '''fact evalForArgs: #[ 4 ]''' )
+24
+
+>>> test( '''Number member: ! setTo: fact''' )
+[ | :n | [ n = 0 ] ifTrue: 1 ifFalse: #[ n * [ fact evalForArgs: [ #[ n - 1 ] evalInPlace ] ] ] ]
+
+>>> test( '''0!''' )
+1
+
+>>> test( '''1!''' )
+1
+
+>>> test( '''2!''' )
+2
+
+>>> test( '''3!''' )
+6
+
+>>> test( '''4!''' )
+24
+
+>>> test( '''5!''' )
+120
+
+# Algol Style Statements
+
+>>> test( '''If <- [ Object make ]''' )                       # doctest: +ELLIPSIS
+<object id=...>
+
+>>> test( '''If selfMember: #name setTo: "If Statement"''' )
+"If Statement"
+
+>>> test( '''If''' )                                          # doctest: +ELLIPSIS
+<object id=... name="If Statement">
+
+>>> test( '''If selfMember: #true: setTo:
+...             #[ | :self :test |
+...             instance <- [ If make ];
+...             instance selfMember: #condition setTo: test;
+...             instance
+...             ]''' )
+[ | :self :test | instance <- [ If make ]; instance selfMember: #condition setTo: test; instance ]
+
+>>> test( '''If selfMember: #then: setTo:
+...             #[ | :self :block |
+...             [ self#condition eval ]
+...                ifTrue:
+...                   #[ block eval ]
+...             ]''' )
+[ | :self :block | [ [ self member: #condition ] eval ] ifTrue: #[ block eval ] ]
+
+>>> test( '''x <- 0''' )
+0
+
+>>> test( '''x''' )
+0
+
+>>> test( '''[If true: #[ x = 0 ] ]
+...             then:
+...                #[ x <- 100 ]''' )
+100

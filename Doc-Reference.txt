@@ -1,0 +1,328 @@
+======================
+*** PUCK Reference ***
+======================
+1. Introduction
+   1.1. PUCK Language Design Goals
+      Puck is named after the pixie character of the same name in William
+      Shakespere's, A Midsummer Night's Dream who went around making
+      mischief.
+
+      The purpose of Puck was to demonstrate a minimal (syntactic,
+      implementation & library) Pure Object Oriented language.  'Pure' in
+      two senses of the word; 1. a language that lends itself only to Object
+      Oriented programming; 2. a language in which everything is, an
+      object, part of the sytactic expression of an object, or that has no
+      purpose other than delimiting or making clear syntactic separation, 
+      grouping, or other relations among objects
+      (i.e. everything is an object).
+
+      Puck is a Dynamic Symbolic language influenced firstly by
+      Smalltalk, and secondly from the Lisp family.
+
+2. The Language
+   2.1. Lexical Elements
+      2.1.1. Comments
+         Comments extend from ';;' through '\n'.
+         All text between and including these two delimiters is ignored.
+
+      2.1.2. Delimiters:
+         ';', '#', '[', ']', '|', '(', ')', ';;', '\n'
+
+      2.1.3. Literals
+
+         NumberLiteral:  ('+'|'-')('0' .. '9')+ [ '.' ('0' .. '9')+ ]
+         StringLiteral:  '"' (^('"'))* '"'
+         Symbol:         'a..zA..Z+-~!@$%^&*_=\:/?<>'
+                         { 'a..zA..Z+-~!@$%^&*_=\:/?<>0..9' }
+
+      2.1.4. Reserved Symbols
+         'null', 'true', 'false', 'class', 'name', 'parameters'
+
+   2.2. Grammar
+      ListenerExpression:
+         Expression ( ';' | EOF )
+
+      Expression:
+         Receiver [ Message ]
+
+      Receiver:
+         Object
+
+      Message:
+         Key [ Argument { Key Argument } ]
+
+      Object:
+         ( NumberLiteral | StringLiteral | ['|'] Symbol | List | '#' Object )
+         { '#' Symbol }                                                        <-- submember access
+
+      Key:
+         Symbol
+
+      Argument:
+         Object
+
+      List:
+         '[' [ LocalDeclList ] [ Expression { ';' Expression } ] ']'
+
+      LocalDeclList:
+         '|' LocalDecl { LocalDecl } '|'
+      
+      LocalDecl:
+         [':'] Symbol
+
+
+
+Object member: #name setTo: "Object"
+Date <- [Object make]
+Date member: #name setTo: "Date"         ;; Object#name changes to "Date"
+
+Object member: #name setTo: "Object"     ;; Object#name = "Object"
+Date <- [Object make]
+Date member: #name setTo: "Date"         ;; Date#name = "Date"
+
+Object member: #isKindOf: setTo: objectIsKindOf    ;; sets to primitive
+Date member: #isKindOf                             ;; gets Object#isKindOf primitive
+
+
+
+
+
+
+3. The Library
+   3.1. Global Value Objects
+      null    instance of    Null
+      true    instance of    Boolean
+      false   instance of    Boolean
+
+   3.2. Primitives
+   3.3. Object Hierarchy
+      3.3.1. Overview
+         Object           Extension:          =, !=, sameObjAs:, isKindOf:
+                          Threads:            >> (parallelize and pipe output to argument)
+                          Deferred to sub:    compareTo:
+                                              eval, evalMessage:,
+                                              make, delete,
+                                              ;; members of self
+                                              memberList, member:,
+                                              member:setTo:, memberRemove:
+                                              ;; members of self or super
+                                              objectHaving:
+                                              ;; eg [myObj objectHaving: #year]
+                          Objects:            class, self, name
+            Primitive     Extension:          evalForArgs:
+            Null
+            Boolean       Extension:          not, and, or
+                                              ifTrue:, ifFalse:
+                                              ifTrue:ifFalse:
+            Symbol        Extension:          ;; changing evaluation
+                                              <-, setTo:,
+                                              makeLocalIdentity,
+                                              evalTo:, evalToSelf
+            Magnitude     Extension:          <, >, <=, >=
+               String     Specialization of Object:  compareTo:
+                          Extension:          length, at:, from:to:, +,
+                                              forEachCharacter:,
+                                              parsePuckExpr, format:
+               Number     Specialization of Object:     compareTo:
+                          Extension:          +, -, *, /, ^,
+                                              truncate, doTimes:
+               List       Specialization of Object:  compareTo:, eval
+                          Extension:          length, at:, from:to:,
+                                              at:setTo:, atRemove:,
+                                              +, append:,
+                                              evalForArgs:,
+                                              evalInPlace, evalInPlace:
+                                              asExpr,
+                                              whileTrue:, forEachItem:
+                          Objects:            parameters
+            Quote         Specialization of Object:  eval
+            Expr          Specialization of Object:  eval
+
+      3.3.2. Class-Object Reference
+
+4. Implementation Highlights
+
+To better understand the workings of puck it can be useful to know what's going on
+internally.  Every object in puck has exactly the same internal structure.
+
+   +--------------+
+   | _valueType   |     int value representing what's stored in value.
+   +--------------+
+   | _value       |     basic data value, one of: long, double, char*, puck Object pointer (or ref), or puck list implementation
+   +--------------+
+   | _class       |     pointer or reference to a puck Object
+   +--------------+
+   | _members     |     pointer to a mapping table: symbol to puck Object (pointer or reference)
+   +--------------+
+   | _environment |     used ONLY by List objects, pointer or reference to the list's symbol table
+   +--------------+
+
+In C++ Object is defined as follows:
+
+struct PkObject
+   {
+   int                        _valType;
+   union
+      {
+      bool                    blVal;    // Boolean
+      unsigned char           prVal;    // Primitive
+      long long               niVal;    // Number Integer
+      long double             nfVal;    // Number Float
+      char*                   stVal;    // Symbol, String
+      PkObject*               quVal;    // Quote
+      std::vector<PkObject*>* liVal;    // list
+      } _val;
+
+   PkObject*                  _class;
+   SymbolDefMap               _members;
+   PkEnvironment*             _environment;
+   };
+
+_val holds the unstructured data values.  To simplify the use of List objects, lists are treated
+in the same way as the unstructured data values.  (Future implementations may change this).
+
+Sending the message #make to any object constructs a new object whose _class pointer (reference)
+points back to the receiver of the original #make message.  Hence, 'Object make' evaluates to a
+new object whose _class is Object; and 'List make' evaluates to a new object whose _class is
+List.  The newly created object is otherwise empty.  This pointer allows the originating object
+to act as a class, in the traditional sence, for the newly created object.  The newly created
+object in turn will act like an uninitialized instance of that "class".
+
+To make a value act like an instance variable, add the object to the newly created instance.
+To make a value act like a class variable, add the object to the originating object, the "class".
+
+5. Future 
+
+- [COMPLETED!] Add shorthand-#:
+     anObject#aMember          as shorthand for     [anObject member: #aMember]
+
+- Add shorthand-#:
+     anObject#aMember <- 3     as shorthand for     [anObject member: #aMember setTo: 3]
+
+- To improve performance of conditions, derive two new classes from Boolean
+  (True and False) each is a singleton.  Implementations of ifTrue:, etc will
+  no longer need to check value prior to acting.
+
+Object member - getting/setting
+-------------------------------
+
+Proposal 1
+
+obj iMember:                  ;; immediate member
+obj iMember:setTo:            ;; immediate member
+    iMember:evalTo:
+obj iMemberList               ;; immediate member
+obj iMemberRemove             ;; immediate member
+
+obj fMember:                  ;; family member     -- these can be defined in Puck
+obj fMember:setTo:            ;; family member
+    fMember:evalTo:
+
+obj objectHaving: #sym        ;; the object in family having member #sym
+
+obj member: #sym              ;; alias for    fMember:
+obj member: #sym setTo: obj   ;; alias for    iMember:setTo:
+    member: #sym evalTo: obj
+
+obj#sym                       ;; alias for [obj member: #sym]; alias for [obj fMember: #sym]
+obj#sym <- obj                ;; alias for [obj member: #sym setTo: obj]; alias for [obj fMember: #sym setTo: obj]
+obj#sym -> obj
+obj#sym evalTo: obj
+
+C Calling Convention
+--------------------
+  Method (primitive and list) implementations should not pop args from the stack.
+  Calling routine should pop args once the routine has returned.
+
+  Stack Call Protocol (Proposal)
+
+          |          |    Prior activation record
+          +----------+
+          |          |
+              ...
+
+          +----------+   <-  Bottom of activation record
+          |  Ret Val |   Space for return val (SP after return)
+          +----------+
+    MP -> |  Old MP  |
+          +----------+
+          |  Arg  n  |
+          +----------+
+              ...
+          +----------+
+          |  Arg  1  |    Args are pushed in reverse order
+          +----------+       with Arg 0 being the receiver.
+          |  Arg  0  |
+          +----------+
+          |  Arg Ct  |    The num args pushed
+          +----------+
+          | Ret Addy |    The return address
+          +----------+
+    BP -> |  Old BP  |    The BP from the previous activation record.
+          +----------+
+          |  Local 0 |    Locals are then pushed.
+          +----------+
+          |  Local 1 |
+          +----------+
+          |  Temp  0 |    Temporaries for evaluating expression
+          +----------+
+    SP -> |  Temp  1 |    The stack grows down the the SP pointing
+     |    +----------+       at the lowest byte address with usable
+     V        ...            stack data (the first byte of the data
+                             at the top of the stack).
+          |          |
+    SS -> +----------+    SS points at the lowest byte of the Stack.
+
+
+Future Classes
+--------------
+Collection
+   Associative
+      Array
+         FixedArray
+         DynamicArray
+      Dictionary
+      ByteBlock
+         File
+   OrderTracker
+      Stack
+      Queue
+      Priority Queue
+      Circular Queue
+   Membership
+      Set
+      Bag
+   Interval
+      DiscreteInterval
+      ContiguousInterval
+CollectionHelpers
+   Finger (for use with collections, iterator)
+   Algorithm
+Wrapper (Makes an object look like another kind of object)
+DateTime
+Stream                  close
+   InputStream          read: <symbol>, eof?
+   OutputStream         write: <object>
+   ReadWrite
+   Socket
+
+New Objects
+   stdin, stdout, stderr, console           for reading and writing
+   listener                                 for adding new commands
+   stack                                    for low-level stack manipulation
+
+
+Things to consider doing
+------------------------
+- Garbage collection
+
+- How to make read-only objects/symbols/members
+
+- Threading/Mutexes
+
+- How to implement active objects (ones that notify observers when changed)
+
+- Expose puck implementation objects to puck programs
+
+- Improve the sophistication of string literals allowing embedded quotes and
+  non-printing characters such as \n and \t.
