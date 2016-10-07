@@ -1,5 +1,5 @@
 from PuckScanner import *
-import Object
+import PuckImpl
 
 class PuckParser( object ):
    def __init__( self, globalEnvironment ):
@@ -36,25 +36,25 @@ class PuckParser( object ):
       if nextToken == PuckScanner.INTEGER_TOK:
          lex = self._scanner.getLexeme( )
          lexVal = int(lex)
-         theObj = Object.PkObject( Object.pkNumberClass, lexVal )
+         theObj = PuckImpl.PkObject( PuckImpl.pkNumberClass, lexVal )
          self._scanner.consume( )
       elif nextToken== PuckScanner.FLOAT_TOK:
          lex = self._scanner.getLexeme( )
          lexVal = float(lex)
-         theObj = Object.PkObject( Object.pkNumberClass, lexVal )
+         theObj = PuckImpl.PkObject( PuckImpl.pkNumberClass, lexVal )
          self._scanner.consume( )
       elif nextToken == PuckScanner.STRING_TOK:
          lex = self._scanner.getLexeme( )
-         theObj = Object.PkObject( Object.pkStringClass, lex[1:-1] )
+         theObj = PuckImpl.PkObject( PuckImpl.pkStringClass, lex[1:-1] )
          self._scanner.consume( )
       elif nextToken == PuckScanner.SYMBOL_TOK:
          lex = self._scanner.getLexeme( )
-         theObj = Object.PkObject( Object.pkSymbolClass, lex )
+         theObj = PuckImpl.PkObject( PuckImpl.pkSymbolClass, lex )
          self._scanner.consume( )
       elif nextToken == PuckScanner.POUND_SIGN_TOK:
          self._scanner.consume( )
          quotedObj = self._parseObject( )
-         theObj = Object.PkObject( Object.pkQuoteClass, quotedObj )
+         theObj = PuckImpl.PkObject( PuckImpl.pkQuoteClass, quotedObj )
       elif nextToken == PuckScanner.OPEN_BRACKET_TOK:
          theObj = self._parseList( )
       else:
@@ -69,9 +69,9 @@ class PuckParser( object ):
          lex = self._scanner.getLexeme( )
          self._scanner.consume( )
 
-         sym = Object.PkObject( Object.pkSymbolClass, lex )
-         theExpr = Object.makePkExpr( [ 'member:' ], [ theObj, Object.PkObject(Object.pkQuoteClass, sym) ] )
-         theObj = Object.makePkList( [ theExpr ], Object.PkEnvironment(self._currentEnv) )
+         sym = PuckImpl.PkObject( PuckImpl.pkSymbolClass, lex )
+         theExpr = PuckImpl.makePkExpr( [ 'member:' ], [ theObj, PuckImpl.PkObject(PuckImpl.pkQuoteClass, sym) ] )
+         theObj = PuckImpl.makePkList( [ theExpr ], PuckImpl.PkEnvironment(self._currentEnv) )
 
          nextToken = self._scanner.peekToken( )
 
@@ -102,7 +102,7 @@ class PuckParser( object ):
             # Parse arguments
             anArgList.append( self._parseObject() )
 
-      return Object.makePkExpr( aKeyList, anArgList )
+      return PuckImpl.makePkExpr( aKeyList, anArgList )
 
    def _parseList( self ):
       # Open Bracket
@@ -110,7 +110,7 @@ class PuckParser( object ):
          raise ParseError( self._scanner, "'[' Expected." )
 
       # Begin a lexical scope
-      self._currentEnv = Object.PkEnvironment( self._currentEnv )
+      self._currentEnv = PuckImpl.PkEnvironment( self._currentEnv )
 
       self._scanner.consume( )
 
@@ -165,7 +165,7 @@ class PuckParser( object ):
 
       self._scanner.consume( )
 
-      result = Object.makePkList( expressions, self._currentEnv, params, allLocals )
+      result = PuckImpl.makePkList( expressions, self._currentEnv, params, allLocals )
 
       # Close a Lexical scope
       self._currentEnv = self._currentEnv.parentEnv( )
@@ -175,22 +175,22 @@ class PuckParser( object ):
 
 def parseAndPrintExpr( anExpr ):
    try:
-      puck = PuckParser( Object.GLOBAL )
+      puck = PuckParser( PuckImpl.GLOBAL )
       result = puck.parse( anExpr )
-      resultStr = Object.printable( result )
+      resultStr = PuckImpl.printable( result )
       print( resultStr )
    except ParseError as ex:
       print( ex.generateVerboseErrorString() )
-   except Object.PuckException as ex:
+   except PuckImpl.PuckException as ex:
       print( ex )
    except Exception as ex:
       print( ex )
 
 def parseEvalAndPrintExpr( anExpr ):
-   puck = PuckParser( Object.GLOBAL )
+   puck = PuckParser( PuckImpl.GLOBAL )
    expr = puck.parse( anExpr )
-   result = Object.EVAL_OBJ_R( expr, Object.GLOBAL )
-   resultStr = Object.printable( result )
+   result = PuckImpl.EVAL_OBJ_R( expr, PuckImpl.GLOBAL )
+   resultStr = PuckImpl.printable( result )
    print( resultStr )
 
 def test( anExpr ):
@@ -207,7 +207,7 @@ if __name__ == '__main__':
                self member: #day   setTo:    1
                ]''' )
    test( '''aDate <- [ Date make ]''' )
-   aDate = Object.GLOBAL.get( 'aDate' )
+   aDate = PuckImpl.GLOBAL.get( 'aDate' )
    test( '''aDate init''' )
    test( '''aDate listMembers''' )
    #test( '''Date member: #addYears: setTo:
