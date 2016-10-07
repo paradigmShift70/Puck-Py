@@ -178,6 +178,20 @@ class Scanner( object ):
       
       return tokenList
 
+   def test( self, aString, EOFToken=0 ):
+      '''Scanner Testing:  Print the list of tokens in the input string.'''
+      try:
+         tokenList = self.tokenize( aString, EOFToken )
+
+         for tokLexPair in tokenList:
+            print( '{0:<4} /{1}/'.format( *tokLexPair ) )
+
+      except ParseError as ex:
+         print( ex.errorString(verbose=True) )
+
+      except Exception as ex:
+         print( ex )
+
    # Contract
    def _scanNextToken( self ):
       """Consume the next token (i.e. scan past it).

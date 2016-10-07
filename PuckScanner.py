@@ -1,5 +1,6 @@
-import Scanner
-from Scanner import ParseError, ScannerState
+from ltk_py3.Scanner import ParseError
+
+import ltk_py3.Scanner as Scanner
 
 
 class PuckScanner( Scanner.Scanner ):
@@ -115,7 +116,7 @@ class PuckScanner( Scanner.Scanner ):
       return PuckScanner.STRING_TOK
 
    def _scanNumOrSymbol( self ):
-      SAVE = ScannerState( )
+      SAVE = Scanner.ScannerState( )
       nextChar = self.buffer.peek( )
 
       self.buffer.markStartOfLexeme( )
@@ -156,7 +157,7 @@ class PuckScanner( Scanner.Scanner ):
       return PuckScanner.SYMBOL_TOK
 
    def _skipWhitespaceAndComments( self ):
-      SAVE = ScannerState( )
+      SAVE = Scanner.ScannerState( )
 
       while self.buffer.peek() in '; \t\n\r':
          self.buffer.consumePast( ' \t\n\r' )
