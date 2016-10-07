@@ -174,6 +174,8 @@ class Scanner( object ):
          tokenList.append( ( token, lex ) )
          self.consume( )
 
+      tokenList.append( (EOFToken,0) )
+      
       return tokenList
 
    # Contract
@@ -186,7 +188,23 @@ class Scanner( object ):
       """
       raise NotImplementedError( )
 
-
+class ScannerLineStream( object ):
+   def __init__( self, inputText ):
+      self._lines = inputText.splitlines(keepends=True)
+      self._point = 0
+   
+   def peekLine( self ):
+      try:
+         return self._lines[ self._point ]
+      except:
+         raise StopIteration( )
+   
+   def consumeLine( self ):
+      self._point += 1
+   
+   def currentLineNumber( self ):
+      return self._point
+   
 class ParseError( Exception ):
    def __init__( self, aScanner, errorMessage, filename='' ):
       self.filename   = filename

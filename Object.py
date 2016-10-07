@@ -4,51 +4,51 @@
 class PkEnvironment( object ):
    SAVE = [ ]
 
-   def __init__( self, aParentEnvironment=None ):
-      self._parentEnvironment  = aParentEnvironment
-      self._symbolTable        = { }
+   def __init__( self, parent=None ):
+      self._parent  = parent
+      self._locals        = { }
 
    def parentEnv( self ):
-      return self._parentEnvironment
+      return self._parent
 
    def resetLocal( self ):
-      self._symbolTable        = { }
+      self._locals        = { }
 
    def declLocal( self, aSymbol, aValue=None ):
-      self._symbolTable[ aSymbol ] = aValue
+      self._locals[ aSymbol ] = aValue
 
    def set( self, aSymbol, aValue ):
       self._set( aSymbol, aValue, self )
 
    def get( self, aSymbol ):
-      if aSymbol in self._symbolTable:
-         return self._symbolTable[ aSymbol ]
-      elif self._parentEnvironment is None:
+      if aSymbol in self._locals:
+         return self._locals[ aSymbol ]
+      elif self._parent is None:
          return None
       else:
-         return self._parentEnvironment.get( aSymbol )
+         return self._parent.get( aSymbol )
 
    def _set( self, aSymbol, aValue, localScope ):
-      if aSymbol in self._symbolTable:
-         self._symbolTable[ aSymbol ] = aValue
-      elif self._parentEnvironment is None:
+      if aSymbol in self._locals:
+         self._locals[ aSymbol ] = aValue
+      elif self._parent is None:
          localScope.declLocal( aSymbol, aValue )
       else:
-         self._parentEnvironment._set( aSymbol, aValue, localScope )
+         self._parent._set( aSymbol, aValue, localScope )
 
    def isDefined( self, aSymbol ):
-      if aSymbol in self._symbolTable:
+      if aSymbol in self._locals:
          return True
-      elif self._parentEnvironment is None:
+      elif self._parent is None:
          return False
       else:
-         return self._parentEnvironment.isDefined( aSymbol )
+         return self._parent.isDefined( aSymbol )
 
    def saveSymTab( self ):
       PkEnvironment.SAVE.append( self._symbolTable.copy() )
 
    def restoreSymTab( self ):
-      self._symbolTable = PkEnvironment.SAVE.pop( )
+      self._locals = PkEnvironment.SAVE.pop( )
 
 GLOBAL = PkEnvironment( )
 
