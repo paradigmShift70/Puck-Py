@@ -1,6 +1,8 @@
+import sys
+
+
 # ################################
 # Define the Execution Environment
-
 class PkEnvironment( object ):
    SAVE = [ ]
 
@@ -45,7 +47,7 @@ class PkEnvironment( object ):
          return self._parent.isDefined( aSymbol )
 
    def saveSymTab( self ):
-      PkEnvironment.SAVE.append( self._symbolTable.copy() )
+      PkEnvironment.SAVE.append( self._locals.copy() )
 
    def restoreSymTab( self ):
       self._locals = PkEnvironment.SAVE.pop( )
@@ -142,6 +144,28 @@ class PkEvaluationStack( object ):
 
 
 STACK  = PkEvaluationStack( )
+
+P_STDIN  = sys.stdin
+P_STDOUT = sys.stdout
+P_STDERR = sys.stderr
+
+def evalPuckExpr( parsedExpr, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr ):
+   global P_STDIN, P_STDOUT, P_STDERR
+   
+   resultExpr = None
+   L_STDIN  = stdin
+   L_STDOUT = stdout
+   L_STDERR = stderr
+   
+   try:
+      resultExpr = EVAL_OBJ_R( parsedExpr )
+   
+   finally:
+      L_STDIN  = sys.stdin
+      L_STDOUT = sys.stdout
+      L_STDERR = sys.stderr
+   
+   return resultExpr
 
 class PuckException( Exception ):
    def __init__( self, aMessage="" ):
@@ -275,9 +299,9 @@ def STACK_EVAL( aSel, anArgCt, anEnv=GLOBAL, isLValue=False ):
    try:
       theHandler = STACK.top().findMember( aSel )   # throws if aSel not found
    except:
-      print( 'Throwing' )
-      print( '   Object: ', printable(STACK.top()) )
-      print( )
+      print( 'Throwing', file=P_STDERR )
+      print( '   Object: ', printable(STACK.top()), file=P_STDERR )
+      print( file=P_STDERR )
       raise
 
    if theHandler._class is pkListClass:
@@ -425,15 +449,15 @@ def ppImpl_Object_printValue( anEnv, anArgCt, isLValue=False ):
    STACK.testArgs( 1, "Object" )
    receiver = STACK.top( )
    try:
-      print( receiver._value )
+      print( receiver._value, file=P_STDOUT )
    except:
       pass
 
 def ppImpl_Object_printMembers( anEnv, anArgCt, isLValue=False ):
    receiver = STACK.top( )
    for mbr, val in receiver._members.items():
-      print( 'Member: ', mbr )
-      print( '   ', printable( val ) )
+      print( 'Member: ', mbr, file=P_STDOUT )
+      print( '   ', printable( val ), file=P_STDOUT )
 
 # pkPrimitive Operations
 def ppImpl_Primitive_evalForArgs_( anEnv, anArgCt, isLValue=False ):
